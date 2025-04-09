@@ -1,0 +1,13 @@
+projection;
+strict ( 2 );
+define behavior for ZC_ZIRNTP alias ZIRN
+use etag
+
+{
+  use update;
+  use delete;
+
+  use action Irn;
+  use action createIRNData;
+  use action PrintForm;
+}

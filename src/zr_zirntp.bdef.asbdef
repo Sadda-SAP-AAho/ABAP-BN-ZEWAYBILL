@@ -1,0 +1,78 @@
+managed implementation in class ZBP_R_ZIRNTP unique;
+strict ( 2 );
+define behavior for ZR_ZIRNTP alias ZIRN
+implementation in class ZBP_R_ZIRNTP unique
+persistent table ztable_irn
+etag master LastChangedAt
+lock master
+authorization master( global )
+
+{
+  field ( readonly )
+   Bukrs,
+   Billingdocno,
+   Billingdate,
+   Plant,
+   Moduletype,
+   Partycode,
+   Partyname,
+   CreatedBy,
+   CreatedAt,
+   LastChangedAt,
+   LastChangedBy,
+   LocalLastChangedAt;
+
+    field ( readonly )
+    GSTNO;
+
+  internal create;
+  //create;
+  update;
+  delete;
+
+  static action createIRNData parameter Z_I_IRNPARM result [1] $self;
+   action Irn result[1] $self;
+   action PrintForm result[1] $self;
+
+
+  mapping for ZTABLE_IRN control ZSZIRN_X
+  {
+    Bukrs = BUKRS;
+    Billingdocno = BILLINGDOCNO;
+    Moduletype = MODULETYPE;
+    Plant = PLANT;
+    Billingdate = BILLINGDATE;
+    Partycode = PARTYCODE;
+    Partyname = PARTYNAME;
+    Irnno = IRNNO;
+    GSTno = GSTNO;
+    Ackno = ACKNO;
+    Ackdate = ACKDATE;
+    Irnstatus = IRNSTATUS;
+    Canceldate = CANCELDATE;
+    IRNCanceldate = IRNCANCELDATE;
+    EwayValidDate = ewayvaliddate;
+    Signedinvoice = SIGNEDINVOICE;
+    distributionchannel = distributionchannel;
+    billingdocumenttype = billingdocumenttype;
+    documentreferenceid = documentreferenceid;
+    Signedqrcode = SIGNEDQRCODE;
+    Distance = DISTANCE;
+    Vehiclenum = VEHICLENUM;
+    Transportername=Transportername;
+    Transportergstin =Transportergstin;
+    Grno = Grno;
+    Grdate =Grdate;
+    Ewaybillno = EWAYBILLNO;
+    Ewaydate = EWAYDATE;
+    Ewaystatus = EWAYSTATUS;
+    Ewaycanceldate = EWAYCANCELDATE;
+    Irncreatedby = IRNCREATEDBY;
+    Ewaycreatedby = EWAYCREATEDBY;
+    CreatedBy = CREATED_BY;
+    CreatedAt = CREATED_AT;
+    LastChangedBy = LAST_CHANGED_BY;
+    LastChangedAt = LAST_CHANGED_AT;
+    LocalLastChangedAt = LOCAL_LAST_CHANGED_AT;
+  }
+}

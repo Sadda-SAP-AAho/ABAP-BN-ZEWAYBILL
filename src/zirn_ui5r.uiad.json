@@ -1,0 +1,34 @@
+{
+  "formatVersion": "1",
+  "header": {
+    "description": "ZIRN",
+    "originalLanguage": "en",
+    "abapLanguageVersion": "cloudDevelopment"
+  },
+  "generalInformation": {
+    "appType": "ui5",
+    "catalogId": "SAP_TC_UI5_REPO_UIAD"
+  },
+  "ui5AppDetails": {
+    "appId": "zirn"
+  },
+  "navigation": {
+    "targetMappingId": "UI5R_E358A0524300FC6A0F8E40DD48758B7E90A5B159_TM",
+    "semanticObject": "zirn",
+    "action": "D",
+    "desktop": true,
+    "tablet": true,
+    "phone": true
+  },
+  "tiles": [
+    {
+      "id": "UI5R_E358A0524300FC6A0F8E40DD48758B7E90A5B159_AL",
+      "tileType": "static",
+      "isDefault": true,
+      "standard": {
+        "title": "ZIRN",
+        "subtitle": "zirn"
+      }
+    }
+  ]
+}

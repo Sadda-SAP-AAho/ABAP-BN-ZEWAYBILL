@@ -1,0 +1,12 @@
+interface;
+define behavior for ZI_ZIRNTP alias ZIRN
+use etag
+
+{
+  use delete;
+
+
+  use action createIRNData;
+  use action Irn;
+  use action PrintForm;
+}
