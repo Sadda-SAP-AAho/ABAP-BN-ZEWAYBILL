@@ -31,6 +31,7 @@ define root view entity ZR_ZIRNTP
       grno                  as Grno,
       grdate                as Grdate,
       distance              as Distance,
+      ewaytranstype       as Ewaytranstype,
       vehiclenum            as Vehiclenum,
       ewaybillno            as Ewaybillno,
       ewaydate              as Ewaydate,

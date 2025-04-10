@@ -545,10 +545,10 @@ DATA: lv_datecurr      TYPE string.
       a~billingquantityunit  ,  "UOM
 *12.03        e~yy1_packsize_sd_sdiu  ,   " package_qtyunit
 *12.03        e~yy1_noofpack_sd_sdi  ,   " avg_content
-      g~conditionratevalue   ,  " i_per
-      g~conditionamount ,
-      g~conditionbasevalue,
-      g~conditiontype ,
+*      g~conditionratevalue   ,  " i_per
+*      g~conditionamount ,
+*      g~conditionbasevalue,
+*      g~conditiontype ,
       a~BILLINGTOBASEQUANTITYNMRTR ,
       a~itemNETweight ,
       j~referencesddocument ,
@@ -561,13 +561,42 @@ DATA: lv_datecurr      TYPE string.
       LEFT JOIN i_productdescription AS d ON d~product = a~product
       LEFT JOIN I_SalesDocumentItem AS e ON e~SalesDocument = a~SalesDocument AND e~salesdocumentitem = a~salesdocumentitem
       LEFT JOIN i_productplantbasic AS f ON a~Product = f~Product
-      LEFT JOIN i_billingdocumentitemprcgelmnt AS g ON g~BillingDocument = a~BillingDocument  AND g~BillingDocumentItem = a~BillingDocumentItem
+*      LEFT JOIN i_billingdocumentitemprcgelmnt AS g ON g~BillingDocument = a~BillingDocument  AND g~BillingDocumentItem = a~BillingDocumentItem
       LEFT JOIN i_deliverydocumentitem AS h ON h~DeliveryDocument =  a~ReferenceSDDocument
       LEFT JOIN I_SalesOrderItem AS j ON j~SalesOrder = h~ReferenceSDDocument
-      WHERE a~billingdocument = @bill_doc  AND G~ConditionType = 'ZPR0'
+      WHERE a~billingdocument = @bill_doc
       INTO TABLE  @DATA(it_item)
       PRIVILEGED ACCESS.
 
+
+**********************************************************************CONDITION TYPE ZPR0
+    SELECT billingdocument,
+       billingdocumentitem,
+       conditiontype,
+       conditionratevalue,
+       conditionbasevalue,
+       conditionamount
+FROM i_billingdocumentitemprcgelmnt
+WHERE billingdocument = @bill_doc
+INTO TABLE @DATA(it_conditions_ZPR0).
+
+**********************************************************************CONDITION TYPE ZPR0 END
+
+**********************************************************************CONDITION TYPE ZCIP
+
+   SELECT billingdocument,
+       billingdocumentitem,
+       conditiontype,
+       conditionratevalue,
+       conditionbasevalue,
+       conditionamount
+FROM i_billingdocumentitemprcgelmnt
+WHERE billingdocument = @bill_doc
+INTO TABLE @DATA(it_conditions_ZCIP).
+
+
+
+**********************************************************************CONDITION TYPE ZCIP END
 
 
 *      out->write( it_item ).
@@ -929,36 +958,71 @@ WHERE billingdocument = @bill_doc
 
 **********************************************************************WEIGHT(KG) END
 
-**********************************************************************RATE PER UOM
+**********************************************************************RATE PER UOM ZPR0
 
 
-*SELECT  FROM I_BillingDocumentItem AS A
-*LEFT JOIN I_Billingdocumentitemprcgelmnt AS B ON B~BillingDocument = A~BillingDocument
-*FIELDS A~BILLINGDOCUMENT , B~CONDITIONRATEVALUE , B~CONDITIONBASEVALUE , A~BillingToBaseQuantityNmrtr , B~ConditionType
-*WHERE A~BILLINGDOCUMENT = @bill_doc AND B~ConditionType IN  ('ZPR0' , 'ZCIP')
-*INTO TABLE @DATA(IT_RPUOM) .
+READ TABLE it_conditions_zpr0 INTO DATA(wa_cond)
+    WITH KEY billingdocument     = wa_item-billingdocument
+             billingdocumentitem = wa_item-billingdocumentitem
+             conditiontype       = 'ZPR0'.
+IF sy-subrc = 0.
+    DATA : lv_ZPR0  TYPE p DECIMALS 2.
+    lv_ZPR0 = wa_item-BILLINGTOBASEQUANTITYNMRTR * wa_cond-conditionratevalue.
+
+    DATA(lv_item_rate) = |<RATEPERUOM>{ lv_ZPR0 }</RATEPERUOM>|.
+    CONCATENATE lv_xml lv_item_rate INTO lv_xml.
 
 
-DATA : CONTYPE TYPE STRING .
-DATA : CONBASEVAL2 TYPE P DECIMALS 2.
-DATA : CONDRATEVAL2 TYPE P DECIMALS 2.
-DATA : CONDMULVAL2 TYPE P DECIMALS 2.
-CONBASEVAL2 = wa_item-BILLINGTOBASEQUANTITYNMRTR .
-CONDRATEVAL2 = WA_item-ConditionRateValue .
-CONDMULVAL2 = conbaseval2 * condrateval2 .
-CONTYPE = wa_item-ConditionType.
+  ELSE.
+    DATA(lv_item_rate2) = |<RATEPERUOM></RATEPERUOM>|.
+    CONCATENATE lv_xml lv_item_rate2 INTO lv_xml.
+  ENDIF.
 
-IF contype = 'ZPR0' .
-  DATA(LV_ITEM_RATE) =
-   |<RATEPERUOM>{ CONDMULVAL2 }</RATEPERUOM>|.
-CONCATENATE   lv_xml lv_item_rate INTO lv_xml.
+**********************************************************************RATE PER UOM ZPR0 END
 
-ELSE .
-    DATA(LV_ITEM_RATE2) =
-   |<RATEPERUOM></RATEPERUOM>|.
-CONCATENATE   lv_xml lv_item_rate2 INTO lv_xml.
-CLEAR : contype , CONBASEVAL2 , CONDRATEVAL2 , CONDMULVAL2   .
-ENDIF.
+**********************************************************************RATE PER UOM ZCIP END
+
+READ TABLE it_conditions_zcip INTO DATA(wa_cond_ZCIP)
+    WITH KEY billingdocument     = wa_item-billingdocument
+             billingdocumentitem = wa_item-billingdocumentitem
+             conditiontype       = 'ZCIP'.
+IF sy-subrc = 0.
+    DATA : lv_ZCIP  TYPE p DECIMALS 2.
+    lv_zcip = wa_item-BILLINGTOBASEQUANTITYNMRTR * wa_cond_zcip-conditionratevalue.
+
+    DATA(lv_item_rate_ZCIP) = |<ZCIPRATEPERUOM>{ lv_zcip }</ZCIPRATEPERUOM>|.
+    CONCATENATE lv_xml lv_item_rate_ZCIP INTO lv_xml.
+
+  ELSE.
+    DATA(lv_item_rate_zcip2) = |<ZCIPRATEPERUOM></ZCIPRATEPERUOM>|.
+    CONCATENATE lv_xml lv_item_rate_zcip2 INTO lv_xml.
+  ENDIF.
+
+
+**********************************************************************RATE PER UOM ZCIP END
+
+
+
+*DATA : CONTYPE TYPE STRING .
+*DATA : CONBASEVAL2 TYPE P DECIMALS 2.
+*DATA : CONDRATEVAL2 TYPE P DECIMALS 2.
+*DATA : CONDMULVAL2 TYPE P DECIMALS 2.
+*CONBASEVAL2 = wa_item-BILLINGTOBASEQUANTITYNMRTR .
+*CONDRATEVAL2 = wa_cond-ConditionRateValue .
+*CONDMULVAL2 = conbaseval2 * condrateval2 .
+*CONTYPE = wa_cond-ConditionType.
+*
+*IF contype = 'ZPR0' .
+*  DATA(LV_ITEM_RATE) =
+*   |<RATEPERUOM>{ CONDMULVAL2 }</RATEPERUOM>|.
+*CONCATENATE   lv_xml lv_item_rate INTO lv_xml.
+*
+*ELSE .
+*    DATA(LV_ITEM_RATE2) =
+*   |<RATEPERUOM></RATEPERUOM>|.
+*CONCATENATE   lv_xml lv_item_rate2 INTO lv_xml.
+*CLEAR : contype , CONBASEVAL2 , CONDRATEVAL2 , CONDMULVAL2   .
+*ENDIF.
 *DATA : CONBASEVAL3 TYPE P DECIMALS 2.
 *DATA : CONDRATEVAL3 TYPE P DECIMALS 2.
 *DATA : CONDMULVAL3 TYPE P DECIMALS 2.

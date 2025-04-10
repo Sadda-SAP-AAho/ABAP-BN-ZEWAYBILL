@@ -32,6 +32,7 @@ define root view entity ZC_ZIRNTP
   EwayValidDate,
   Distance,
   Vehiclenum,
+  Ewaytranstype,
   Transportername,
   Transportergstin,
   Grno,

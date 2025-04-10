@@ -360,6 +360,19 @@ annotate view ZC_ZIRNTP with
   } ]
   Grno;
 
+     @UI.lineItem: [ {
+    position: 240 ,
+    importance: #HIGH,
+    label: 'Eway Transaction Type'
+  } ]
+  @UI.identification: [ {
+    position: 240 ,
+    label: 'Eway Transaction Type'
+  } ]
+  @Consumption.valueHelpDefinition: [{ entity:{ element: 'Description' ,name: 'ZR_EWAYTRANSTYPE'} }] 
+  Ewaytranstype;
+
+
   @UI.hidden: true
   Irncreatedby;
   

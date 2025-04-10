@@ -1,5 +1,6 @@
 @EndUserText.label: 'Service Defination'
 define service ZSD_ZEWAYBILL {
-  expose ZC_ZIRNTP as ZIRN;
-  expose zc_plantv as ZVHPLANT;
+  expose ZC_ZIRNTP        as ZIRN;
+  expose zc_plantv        as ZVHPLANT;
+  expose ZR_EWAYTRANSTYPE as EwayTransType;
 }

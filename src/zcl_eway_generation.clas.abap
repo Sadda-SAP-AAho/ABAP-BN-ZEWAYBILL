@@ -125,7 +125,7 @@ CLASS ZCL_EWAY_GENERATION IMPLEMENTATION.
     wa_final-documentnumber = lv_document_details-DocumentReferenceID.
     wa_final-documentdate = lv_document_details-BillingDocumentDate+6(2) && '/' && lv_document_details-BillingDocumentDate+4(2) && '/' && lv_document_details-BillingDocumentDate(4).
 
-    wa_final-transactiontype = '1'.
+
     wa_final-supplytype = 'OUTWARD'.
      IF lv_document_details-BillingDocumentType = 'JDC' OR lv_document_details-BillingDocumentType = 'JSN' OR lv_document_details-BillingDocumentType = 'JVR' OR lv_document_details-BillingDocumentType = 'JSP'.
         wa_final-subsupplytype = '5'.
@@ -194,7 +194,7 @@ CLASS ZCL_EWAY_GENERATION IMPLEMENTATION.
 
 
     select single from zr_zirntp
-    FIELDS Transportername, Vehiclenum, Grdate, Grno, Transportergstin, Distance
+    FIELDS Transportername, Vehiclenum, Grdate, Grno, Transportergstin, Distance, Ewaytranstype
     where Billingdocno = @invoice and Bukrs = @companycode
     INTO @DATA(Eway).
 
@@ -210,6 +210,12 @@ CLASS ZCL_EWAY_GENERATION IMPLEMENTATION.
         wa_final-distance = Eway-Distance.
     ENDIF.
     wa_final-vehtype = 'R'.
+
+    SELECT SINGLE FROM zr_ewaytranstype
+    FIELDS Value
+    WHERE Description = @Eway-Ewaytranstype
+    INTO @wa_final-transactiontype.
+
 
     SELECT FROM I_BillingDocumentItem AS item
         LEFT JOIN I_ProductDescription AS pd ON item~Product = pd~Product AND pd~LanguageISOCode = 'EN'

@@ -193,11 +193,19 @@ DATA: lv_datecurr      TYPE string.
     WHERE a~billingdocument = @bill_doc
     INTO @DATA(wa_gatemain).
 
-
-
-
-
 ***********************************************************************LR NO & VEHICLENO & TRANSPORTMODE & LR DATE END
+
+**********************************************************************ZIRN LOGIC FOR LR NO & VEHICLENO & TRANSPORTMODE & LR DATE END
+
+SELECT SINGLE FROM I_BillingDocument AS A
+LEFT JOIN ztable_irn AS B ON B~billingdocno = A~BillingDocument
+FIELDS A~BillingDocument , B~vehiclenum , B~transportername , B~grno , B~grdate
+WHERE A~BillingDocument = @bill_doc
+INTO @DATA(WA_IRN).
+
+
+**********************************************************************ZIRN LOGIC FOR LR NO & VEHICLENO & TRANSPORTMODE & LR DATE END
+
     p_add1 = wa_header-address1 .
     p_add2 = wa_header-address2 .
     p_dist = wa_header-district .
@@ -480,10 +488,10 @@ DATA: lv_datecurr      TYPE string.
       a~billingquantityunit  ,  "UOM
 *12.03        e~yy1_packsize_sd_sdiu  ,   " package_qtyunit
 *12.03        e~yy1_noofpack_sd_sdi  ,   " avg_content
-      g~conditionratevalue   ,  " i_per
-      g~conditionamount ,
-      g~conditionbasevalue,
-      g~conditiontype ,
+*      g~conditionratevalue   ,  " i_per
+*      g~conditionamount ,
+*      g~conditionbasevalue,
+*      g~conditiontype ,
       a~BILLINGTOBASEQUANTITYNMRTR ,
       a~itemNETweight ,
       j~referencesddocument ,
@@ -496,13 +504,42 @@ DATA: lv_datecurr      TYPE string.
       LEFT JOIN i_productdescription AS d ON d~product = a~product
       LEFT JOIN I_SalesDocumentItem AS e ON e~SalesDocument = a~SalesDocument AND e~salesdocumentitem = a~salesdocumentitem
       LEFT JOIN i_productplantbasic AS f ON a~Product = f~Product
-      LEFT JOIN i_billingdocumentitemprcgelmnt AS g ON g~BillingDocument = a~BillingDocument  AND g~BillingDocumentItem = a~BillingDocumentItem
+*      LEFT JOIN i_billingdocumentitemprcgelmnt AS g ON g~BillingDocument = a~BillingDocument  AND g~BillingDocumentItem = a~BillingDocumentItem
       LEFT JOIN i_deliverydocumentitem AS h ON h~DeliveryDocument =  a~ReferenceSDDocument
       LEFT JOIN I_SalesOrderItem AS j ON j~SalesOrder = h~ReferenceSDDocument
       WHERE a~billingdocument = @bill_doc
       INTO TABLE  @DATA(it_item)
       PRIVILEGED ACCESS.
 
+
+**********************************************************************CONDITION TYPE ZPR0
+    SELECT billingdocument,
+       billingdocumentitem,
+       conditiontype,
+       conditionratevalue,
+       conditionbasevalue,
+       conditionamount
+FROM i_billingdocumentitemprcgelmnt
+WHERE billingdocument = @bill_doc
+INTO TABLE @DATA(it_conditions_ZPR0).
+
+**********************************************************************CONDITION TYPE ZPR0 END
+
+**********************************************************************CONDITION TYPE ZCIP
+
+   SELECT billingdocument,
+       billingdocumentitem,
+       conditiontype,
+       conditionratevalue,
+       conditionbasevalue,
+       conditionamount
+FROM i_billingdocumentitemprcgelmnt
+WHERE billingdocument = @bill_doc
+INTO TABLE @DATA(it_conditions_ZCIP).
+
+
+
+**********************************************************************CONDITION TYPE ZCIP END
 
 
 *      out->write( it_item ).
@@ -538,30 +575,70 @@ WHERE billingdocument = @bill_doc
     |<EWAYBILLNO>{ wa_header-ewaybillno }</EWAYBILLNO>| &&
     |<FSSAINO>{ wa_header-fssai_no }</FSSAINO>| &&
     |<SIGNEDQR>{ wa_header-signedqrcode }</SIGNEDQR>| &&
-    |<AckNumber>{ wa_header-ackno }</AckNumber>| &&
-    |<VehicleNo>{ wa_gatemain-Vehicleno }</VehicleNo>| &&
+    |<AckNumber>{ wa_header-ackno }</AckNumber>| .
+
+    IF wa_gatemain IS NOT INITIAL.
+    DATA(LV_VEH) =
+    |<VehicleNo>{ wa_gatemain-Vehicleno }</VehicleNo>|.
+    CONCATENATE lv_xml lv_veh INTO lv_xml.
+    ELSE .
+    DATA(LV_VEH2) =
+    |<VehicleNo>{ WA_IRN-vehiclenum }</VehicleNo>|.
+    CONCATENATE lv_xml lv_veh INTO lv_xml.
+    ENDIF.
+
+    IF wa_gatemain IS NOT INITIAL.
+    DATA(LV_LRNO) =
     |<LrNo>{ wa_gatemain-Lrno }</LrNo>| .
+    CONCATENATE lv_xml lv_lrno INTO lv_xml.
+    ELSE .
+    DATA(LV_LRNO2) =
+    |<LrNo>{ wa_irn-grno }</LrNo>| .
+    CONCATENATE lv_xml lv_lrno2 INTO lv_xml.
+    ENDIF.
+
+    IF wa_gatemain IS NOT INITIAL.
+    DATA(LV_TRNAME) =
+    |<YY1_Transporter_Name_BDH>{ wa_gatemain-Transportername }</YY1_Transporter_Name_BDH>|.
+    CONCATENATE lv_xml LV_TRNAME INTO lv_xml.
+    ELSE .
+    DATA(LV_TRNAME2) =
+    |<YY1_Transporter_Name_BDH>{ wa_irn-transportername }</YY1_Transporter_Name_BDH>|.
+    CONCATENATE lv_xml LV_TRNAME2 INTO lv_xml.
+    ENDIF.
 
 **********************************************************************LRDATE CONDENSE
-    DATA: lv_date      TYPE string,
-          lv_gatemain1 TYPE string,
-          lv_gatemain2 TYPE string.
+*    DATA: lv_date      TYPE string,
+*          lv_gatemain1 TYPE string.
+*          lv_gatemain2 TYPE string.
 
+IF wa_gatemain IS NOT INITIAL.
     " Check if lrdate is valid (not initial and not a default date)
-    IF wa_gatemain-lrdate IS NOT INITIAL AND wa_gatemain-lrdate <> '00000000' AND wa_gatemain-lrdate <> '00010101'.
+*    IF wa_gatemain-lrdate IS NOT INITIAL AND wa_gatemain-lrdate <> '00000000' AND wa_gatemain-lrdate <> '00010101'.
       " Convert YYYYMMDD to DD/MM/YYYY format
-      lv_date = wa_gatemain-lrdate.
+      DATA(lv_date) = wa_gatemain-lrdate.
       CONDENSE lv_date NO-GAPS.  " Remove any spaces
       lv_date = lv_date+6(2) && '/' && lv_date+4(2) && '/' && lv_date(4).
 
       " Generate XML tag with formatted date
-      lv_gatemain1 = |<LrDate>{ lv_date }</LrDate>|.
-      CONCATENATE lv_xml lv_gatemain1 INTO lv_xml RESPECTING BLANKS.
-    ELSE.
+      DATA(lv_gatemain) =
+      |<LrDate>{ lv_date }</LrDate>|.
+      CONCATENATE lv_xml lv_gatemain INTO lv_xml . " RESPECTING BLANKS.
+*    ELSE.
       " Generate XML tag with an empty LrDate
-      lv_gatemain2 = |<LrDate></LrDate>|.
-      CONCATENATE lv_xml lv_gatemain2 INTO lv_xml RESPECTING BLANKS.
-    ENDIF.
+*      lv_gatemain2 = |<LrDate></LrDate>|.
+*      CONCATENATE lv_xml lv_gatemain2 INTO lv_xml RESPECTING BLANKS.
+*    ENDIF.
+ELSE .
+DATA(lv_date2) = wa_irn-grdate.
+      CONDENSE lv_date2 NO-GAPS.  " Remove any spaces
+      lv_date2 = lv_date2+6(2) && '/' && lv_date2+4(2) && '/' && lv_date2(4).
+
+       DATA(lv_gatemain2) =
+      |<LrDate>{ lv_date2 }</LrDate>|.
+      CONCATENATE lv_xml lv_gatemain2 INTO lv_xml .
+
+ENDIF.
 
 *DATA: lv_date      TYPE string,
 *      lv_gatemain1 TYPE string,
@@ -675,7 +752,6 @@ WHERE billingdocument = @bill_doc
 
     DATA(lv_xml2) =
     |<TransporterMode>{ wa_gatemain-Transportmode }</TransporterMode>| &&
-    |<YY1_Transporter_Name_BDH>{ wa_gatemain-Transportername }</YY1_Transporter_Name_BDH>| &&
 *    |<YY1_EmailAddress_BDH>{ wa_email-EmailAddress }</YY1_EmailAddress_BDH>| &&
     |<BillingDate>{ wa_header-billingdate }</BillingDate>| &&
     |<BankName>{ wa_bank-bank_details }</BankName>| &&
@@ -864,50 +940,104 @@ WHERE billingdocument = @bill_doc
 
 **********************************************************************WEIGHT(KG) END
 
-**********************************************************************RATE PER UOM
+**********************************************************************RATE PER UOM ZPR0
 
 
-*SELECT  FROM I_BillingDocumentItem AS A
-*LEFT JOIN I_Billingdocumentitemprcgelmnt AS B ON B~BillingDocument = A~BillingDocument
-*FIELDS A~BILLINGDOCUMENT , B~CONDITIONRATEVALUE , B~CONDITIONBASEVALUE , A~BillingToBaseQuantityNmrtr , B~ConditionType
-*WHERE A~BILLINGDOCUMENT = @bill_doc AND B~ConditionType IN  ('ZPR0' , 'ZCIP')
-*INTO TABLE @DATA(IT_RPUOM) .
+READ TABLE it_conditions_zpr0 INTO DATA(wa_cond)
+    WITH KEY billingdocument     = wa_item-billingdocument
+             billingdocumentitem = wa_item-billingdocumentitem
+             conditiontype       = 'ZPR0'.
+IF sy-subrc = 0.
+    DATA : lv_ZPR0  TYPE p DECIMALS 2.
+    lv_ZPR0 = wa_item-BILLINGTOBASEQUANTITYNMRTR * wa_cond-conditionratevalue.
+
+    DATA(lv_item_rate) = |<RATEPERUOM>{ lv_ZPR0 }</RATEPERUOM>|.
+    CONCATENATE lv_xml lv_item_rate INTO lv_xml.
+
+
+  ELSE.
+    DATA(lv_item_rate2) = |<RATEPERUOM></RATEPERUOM>|.
+    CONCATENATE lv_xml lv_item_rate2 INTO lv_xml.
+  ENDIF.
+
+**********************************************************************RATE PER UOM ZPR0 END
+
+**********************************************************************RATE PER UOM ZCIP END
+
+READ TABLE it_conditions_zcip INTO DATA(wa_cond_ZCIP)
+    WITH KEY billingdocument     = wa_item-billingdocument
+             billingdocumentitem = wa_item-billingdocumentitem
+             conditiontype       = 'ZCIP'.
+IF sy-subrc = 0.
+    DATA : lv_ZCIP  TYPE p DECIMALS 2.
+    lv_zcip = wa_item-BILLINGTOBASEQUANTITYNMRTR * wa_cond_zcip-conditionratevalue.
+
+    DATA(lv_item_rate_ZCIP) = |<ZCIPRATEPERUOM>{ lv_zcip }</ZCIPRATEPERUOM>|.
+    CONCATENATE lv_xml lv_item_rate_ZCIP INTO lv_xml.
+
+  ELSE.
+    DATA(lv_item_rate_zcip2) = |<ZCIPRATEPERUOM></ZCIPRATEPERUOM>|.
+    CONCATENATE lv_xml lv_item_rate_zcip2 INTO lv_xml.
+  ENDIF.
+
+
+**********************************************************************RATE PER UOM ZCIP END
 
 
 
-DATA : CONBASEVAL2 TYPE P DECIMALS 2.
-DATA : CONDRATEVAL2 TYPE P DECIMALS 2.
-DATA : CONDMULVAL2 TYPE P DECIMALS 2.
-CONBASEVAL2 = wa_item-BILLINGTOBASEQUANTITYNMRTR .
-CONDRATEVAL2 = WA_item-ConditionRateValue .
-CONDMULVAL2 = conbaseval2 * condrateval2 .
+*DATA : CONTYPE TYPE STRING .
+*DATA : CONBASEVAL2 TYPE P DECIMALS 2.
+*DATA : CONDRATEVAL2 TYPE P DECIMALS 2.
+*DATA : CONDMULVAL2 TYPE P DECIMALS 2.
+*CONBASEVAL2 = wa_item-BILLINGTOBASEQUANTITYNMRTR .
+*CONDRATEVAL2 = wa_cond-ConditionRateValue .
+*CONDMULVAL2 = conbaseval2 * condrateval2 .
+*CONTYPE = wa_cond-ConditionType.
+*
+*IF contype = 'ZPR0' .
+*  DATA(LV_ITEM_RATE) =
+*   |<RATEPERUOM>{ CONDMULVAL2 }</RATEPERUOM>|.
+*CONCATENATE   lv_xml lv_item_rate INTO lv_xml.
+*
+*ELSE .
+*    DATA(LV_ITEM_RATE2) =
+*   |<RATEPERUOM></RATEPERUOM>|.
+*CONCATENATE   lv_xml lv_item_rate2 INTO lv_xml.
+*CLEAR : contype , CONBASEVAL2 , CONDRATEVAL2 , CONDMULVAL2   .
+*ENDIF.
+*DATA : CONBASEVAL3 TYPE P DECIMALS 2.
+*DATA : CONDRATEVAL3 TYPE P DECIMALS 2.
+*DATA : CONDMULVAL3 TYPE P DECIMALS 2.
+*CONBASEVAL3 = wa_item-BILLINGTOBASEQUANTITYNMRTR .
+*CONDRATEVAL3 = wa_item-ConditionRateValue .
+*CONDMULVAL3 = conbaseval3 * condrateval3 .
+*
+*ELSEIF  WA_item-ConditionType = 'ZCIP' .
+*  DATA(LV_ITEM_RATE2) =
+*   |<STORATEPERUOM>{ CONDMULVAL3 }</STORATEPERUOM>|.
+*CONCATENATE   lv_xml LV_ITEM_RATE2 INTO lv_xml.
+*CLEAR :  CONBASEVAL3 , CONDRATEVAL3 , CONDMULVAL3   .
 
-
-IF WA_item-ConditionType = 'ZPR0' .
-  DATA(LV_ITEM_RATE) =
-   |<RATEPERUOM>{ CONDMULVAL2 }</RATEPERUOM>|.
-CONCATENATE   lv_xml lv_item_rate INTO lv_xml.
-CLEAR :  CONBASEVAL2 , CONDRATEVAL2 , CONDMULVAL2   .
-ENDIF.
+*ENDIF.
 
 **********************************************************************RATE PER UOM END
 
 
 **********************************************************************ZCIP RATE PER UOM
 
-DATA : CONBASEVAL3 TYPE P DECIMALS 2.
-DATA : CONDRATEVAL3 TYPE P DECIMALS 2.
-DATA : CONDMULVAL3 TYPE P DECIMALS 2.
-CONBASEVAL3 = wa_item-BILLINGTOBASEQUANTITYNMRTR .
-CONDRATEVAL3 = wa_item-ConditionRateValue .
-CONDMULVAL3 = conbaseval3 * condrateval3 .
-
-IF  WA_item-ConditionType = 'ZCIP' .
-  DATA(LV_ITEM_RATE2) =
-   |<STORATEPERUOM>{ CONDMULVAL3 }</STORATEPERUOM>|.
-CONCATENATE   lv_xml LV_ITEM_RATE2 INTO lv_xml.
-CLEAR :  CONBASEVAL3 , CONDRATEVAL3 , CONDMULVAL3   .
-ENDIF.
+*DATA : CONBASEVAL3 TYPE P DECIMALS 2.
+*DATA : CONDRATEVAL3 TYPE P DECIMALS 2.
+*DATA : CONDMULVAL3 TYPE P DECIMALS 2.
+*CONBASEVAL3 = wa_item-BILLINGTOBASEQUANTITYNMRTR .
+*CONDRATEVAL3 = wa_item-ConditionRateValue .
+*CONDMULVAL3 = conbaseval3 * condrateval3 .
+*
+*ELSEIF  WA_item-ConditionType = 'ZCIP' .
+*  DATA(LV_ITEM_RATE2) =
+*   |<STORATEPERUOM>{ CONDMULVAL3 }</STORATEPERUOM>|.
+*CONCATENATE   lv_xml LV_ITEM_RATE2 INTO lv_xml.
+*CLEAR :  CONBASEVAL3 , CONDRATEVAL3 , CONDMULVAL3   .
+*ENDIF.
 
 
 **********************************************************************ZCIP RATE PER UOM END
@@ -975,6 +1105,7 @@ ENDIF.
 
 
     REPLACE ALL OCCURRENCES OF '&' IN lv_xml WITH 'and' .
+
 
 
 *    REPLACE ALL OCCURRENCES OF '&' IN lv_xml WITH 'and'.

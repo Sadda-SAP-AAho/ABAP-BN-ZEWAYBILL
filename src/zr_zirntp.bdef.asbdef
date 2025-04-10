@@ -67,6 +67,7 @@ authorization master( global )
     Ewaydate = EWAYDATE;
     Ewaystatus = EWAYSTATUS;
     Ewaycanceldate = EWAYCANCELDATE;
+    Ewaytranstype = EWAYTRANSTYPE;
     Irncreatedby = IRNCREATEDBY;
     Ewaycreatedby = EWAYCREATEDBY;
     CreatedBy = CREATED_BY;

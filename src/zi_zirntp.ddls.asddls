@@ -25,6 +25,7 @@ define root view entity ZI_ZIRNTP
   EwayValidDate,
   Signedinvoice,
   Signedqrcode,
+  Ewaytranstype,
   Distance,
   Vehiclenum,
   Transportername,
