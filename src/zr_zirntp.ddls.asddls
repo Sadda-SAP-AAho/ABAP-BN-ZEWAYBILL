@@ -28,6 +28,7 @@ define root view entity ZR_ZIRNTP
       signedqrcode          as Signedqrcode,
       transportername       as Transportername,
       transportergstin      as Transportergstin,
+      transportmode as Transportmode,
       grno                  as Grno,
       grdate                as Grdate,
       distance              as Distance,

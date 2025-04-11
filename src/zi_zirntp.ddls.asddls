@@ -30,6 +30,7 @@ define root view entity ZI_ZIRNTP
   Vehiclenum,
   Transportername,
   Transportergstin,
+  Transportmode,
   Grno,
   Grdate,  
   Ewaybillno,

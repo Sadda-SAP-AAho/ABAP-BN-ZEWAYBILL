@@ -61,6 +61,7 @@ authorization master( global )
     Vehiclenum = VEHICLENUM;
     Transportername=Transportername;
     Transportergstin =Transportergstin;
+    Transportmode = Transportmode;
     Grno = Grno;
     Grdate =Grdate;
     Ewaybillno = EWAYBILLNO;

@@ -61,7 +61,7 @@ CLASS ZCL_HTTP_GENERATEIRN IMPLEMENTATION.
         a~PayerParty,
         b~CustomerName,
         a~DistributionChannel,
-        a~BillingDocumentType, c~DocumentReferenceID
+        a~BillingDocumentType, c~DocumentReferenceID,a~ReferenceSDDocument
         WHERE a~Plant = @plant
         AND a~CreationDate = @docdate
          AND
@@ -79,6 +79,26 @@ CLASS ZCL_HTTP_GENERATEIRN IMPLEMENTATION.
         DATA: wa_zirn TYPE ztable_irn.
         GET TIME STAMP FIELD DATA(lv_timestamp).
         LOOP AT lt INTO DATA(wa).
+
+          SHIFT wa-ReferenceSDDocument LEFT DELETING LEADING '0'.
+
+            SELECT SINGLE
+            d~vehicleno ,
+            d~LRNo ,
+            d~transportmode ,
+            d~transportername ,
+            d~lrdate
+            FROM zr_gateentrylines AS c
+            JOIN ZR_GateEntryHeader AS d ON d~Gateentryno = c~Gateentryno
+            WHERE c~Documentno = @wa-ReferenceSDDocument
+            INTO @DATA(wa_gatemain).
+
+          wa_zirn-grno = wa_gatemain-LRNo.
+          wa_zirn-grdate = wa_gatemain-lrdate.
+          wa_zirn-transportername = wa_gatemain-Transportername.
+          wa_zirn-vehiclenum = wa_gatemain-Vehicleno.
+          wa_zirn-transportmode = wa_gatemain-Transportmode.
+
           wa_zirn-Bukrs = wa-CompanyCode.
           wa_zirn-billingdocno = wa-BillingDocument.
           wa_zirn-billingdate = wa-CreationDate.

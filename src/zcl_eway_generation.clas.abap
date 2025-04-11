@@ -311,7 +311,7 @@ CLASS ZCL_EWAY_GENERATION IMPLEMENTATION.
 
           wa_final-totalassessableamount   +=   + wa_itemlist-assamt.
           wa_final-totaligstamount +=  wa_itemlist-igstamt.
-          wa_final-totalcgstamount +=  wa_itemlist-cgstrt.
+          wa_final-totalcgstamount +=  wa_itemlist-cgstamt.
           wa_final-totalsgstamount +=  wa_itemlist-sgstamt.
           wa_final-othertcsamount +=  tcsamt.
 
