@@ -9,7 +9,10 @@ CLASS zcl_http_irn DEFINITION
   PRIVATE SECTION.
 ENDCLASS.
 
-CLASS zcl_http_irn IMPLEMENTATION.
+
+
+CLASS ZCL_HTTP_IRN IMPLEMENTATION.
+
 
   METHOD if_http_service_extension~handle_request.
     CASE request->get_method( ).
@@ -229,4 +232,3 @@ CLASS zcl_http_irn IMPLEMENTATION.
     ENDCASE.
   ENDMETHOD.
 ENDCLASS.
-

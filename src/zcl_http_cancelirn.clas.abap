@@ -17,7 +17,50 @@ ENDCLASS.
 
 
 
-CLASS zcl_http_cancelirn IMPLEMENTATION.
+CLASS ZCL_HTTP_CANCELIRN IMPLEMENTATION.
+
+
+  METHOD getPayload.
+
+
+    TYPES: BEGIN OF ty_item_list,
+             irn    TYPE string,
+             CnlRsn TYPE string,
+             CnlRem TYPE string,
+           END OF ty_item_list.
+
+    DATA : wa_json TYPE ty_item_list.
+
+    SELECT SINGLE FROM ztable_irn AS a
+    FIELDS a~irnno
+     WHERE a~billingdocno = @invoice AND
+     a~bukrs = @companycode
+     INTO @DATA(lv_table_data).
+
+    wa_json-irn = lv_table_data.
+    wa_json-cnlrem = 'Wrong'.
+    wa_json-cnlrsn = '1'.
+
+
+    DATA:json TYPE REF TO if_xco_cp_json_data.
+
+    xco_cp_json=>data->from_abap(
+      EXPORTING
+        ia_abap      = wa_json
+      RECEIVING
+        ro_json_data = json   ).
+    json->to_string(
+      RECEIVING
+        rv_string =   DATA(lv_string) ).
+
+    REPLACE ALL OCCURRENCES OF '"IRN"' IN lv_string WITH '"Irn"'.
+    REPLACE ALL OCCURRENCES OF '"CNLRSN"' IN lv_string WITH '"CnlRsn"'.
+    REPLACE ALL OCCURRENCES OF '"CNLREM"' IN lv_string WITH '"CnlRem"'.
+
+    result = |[{ lv_string }]|.
+
+  ENDMETHOD.
+
 
   METHOD if_http_service_extension~handle_request.
     CASE request->get_method(  ).
@@ -191,47 +234,5 @@ CLASS zcl_http_cancelirn IMPLEMENTATION.
         response->set_status( i_code = 405 i_reason = 'Method Not Allowed' ).
         response->set_text( 'Only POST method is supported' ).
     ENDCASE.
-  ENDMETHOD.
-
-
-  METHOD getPayload.
-
-
-    TYPES: BEGIN OF ty_item_list,
-             irn    TYPE string,
-             CnlRsn TYPE string,
-             CnlRem TYPE string,
-           END OF ty_item_list.
-
-    DATA : wa_json TYPE ty_item_list.
-
-    SELECT SINGLE FROM ztable_irn AS a
-    FIELDS a~irnno
-     WHERE a~billingdocno = @invoice AND
-     a~bukrs = @companycode
-     INTO @DATA(lv_table_data).
-
-    wa_json-irn = lv_table_data.
-    wa_json-cnlrem = 'Wrong'.
-    wa_json-cnlrsn = '1'.
-
-
-    DATA:json TYPE REF TO if_xco_cp_json_data.
-
-    xco_cp_json=>data->from_abap(
-      EXPORTING
-        ia_abap      = wa_json
-      RECEIVING
-        ro_json_data = json   ).
-    json->to_string(
-      RECEIVING
-        rv_string =   DATA(lv_string) ).
-
-    REPLACE ALL OCCURRENCES OF '"IRN"' IN lv_string WITH '"Irn"'.
-    REPLACE ALL OCCURRENCES OF '"CNLRSN"' IN lv_string WITH '"CnlRsn"'.
-    REPLACE ALL OCCURRENCES OF '"CNLREM"' IN lv_string WITH '"CnlRem"'.
-
-    result = |[{ lv_string }]|.
-
   ENDMETHOD.
 ENDCLASS.

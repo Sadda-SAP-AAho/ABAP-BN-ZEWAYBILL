@@ -13,9 +13,7 @@ ENDCLASS.
 
 
 
-CLASS zhttp_printform IMPLEMENTATION.
-
-
+CLASS ZHTTP_PRINTFORM IMPLEMENTATION.
 
 
   METHOD if_http_service_extension~handle_request.
@@ -247,7 +245,4 @@ CLASS zhttp_printform IMPLEMENTATION.
 
 
   ENDMETHOD.
-
-
 ENDCLASS.
-

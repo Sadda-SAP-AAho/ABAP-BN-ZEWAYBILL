@@ -167,7 +167,7 @@ ENDCLASS.
 
 
 
-CLASS zcl_irn_generation IMPLEMENTATION.
+CLASS ZCL_IRN_GENERATION IMPLEMENTATION.
 
 
   METHOD generated_irn.
@@ -365,14 +365,14 @@ CLASS zcl_irn_generation IMPLEMENTATION.
                                                          ConditionType = 'JOSG'.
 *        wa_itemlist-sgst_amount                    = wa_price2-ConditionAmount.
 
-        if wa_price2 is initial.
+        IF wa_price2 IS INITIAL.
 *      by vinagy gaurav
-       READ TABLE it_price INTO DATA(wa_price9) WITH KEY BillingDocument = wa_lines-BillingDocument
-                                                         BillingDocumentItem = wa_lines-BillingDocumentItem
-                                                         ConditionType = 'JOUG'.
-        wa_itemlist-sgst_amount                    = wa_price9-ConditionAmount.
-        else.
-         wa_itemlist-sgst_amount                    = wa_price2-ConditionAmount.
+          READ TABLE it_price INTO DATA(wa_price9) WITH KEY BillingDocument = wa_lines-BillingDocument
+                                                            BillingDocumentItem = wa_lines-BillingDocumentItem
+                                                            ConditionType = 'JOUG'.
+          wa_itemlist-sgst_amount                    = wa_price9-ConditionAmount.
+        ELSE.
+          wa_itemlist-sgst_amount                    = wa_price2-ConditionAmount.
         ENDIF.
 
         READ TABLE it_price INTO DATA(wa_price3) WITH KEY BillingDocument = wa_lines-BillingDocument
@@ -417,9 +417,33 @@ CLASS zcl_irn_generation IMPLEMENTATION.
        AND billingdocument = @wa_lines-billingdocument AND billingdocumentitem = @wa_lines-billingdocumentitem
         INTO @DATA(unitprice) .
 
-      wa_itemList-unit_price = unitprice-unitprice.
+      IF unitprice IS NOT INITIAL.
+
+        wa_itemList-unit_price = unitprice-unitprice.
+        wa_itemlist-total_amount = unitprice-TotAmt.
+
+      ELSE.
+
+        SELECT   FROM i_billingdocumentitemprcgelmnt AS a
+       FIELDS  SUM( a~ConditionRateAmount ) AS UnitPrice, SUM( a~ConditionAmount ) AS TotAmt
+        WHERE   conditiontype IN ( 'ZCIP' )
+        AND billingdocument = @wa_lines-billingdocument AND billingdocumentitem = @wa_lines-billingdocumentitem
+         INTO @DATA(unitprice2) .
+
+        wa_itemList-unit_price = unitprice2-unitprice.
+        wa_itemlist-total_amount = unitprice2-TotAmt.
+
+        wa_itemlist-cgst_amount = '0'.
+        wa_itemlist-sgst_amount = '0'.
+
+        IF wa_itemlist-igst_amount IS INITIAL.
+          wa_itemlist-gst_rate = '0'.
+        ENDIF.
+
+      ENDIF.
+
+
       wa_itemList-other_charge = tcsamt.
-      wa_itemlist-total_amount = unitprice-TotAmt.
       wa_itemlist-assessable_value = wa_itemlist-total_amount - wa_itemlist-discount + tcsamt."OtherCharges.
 
 
@@ -446,8 +470,8 @@ CLASS zcl_irn_generation IMPLEMENTATION.
                                                         ConditionType = 'DRD1'.
 
 
-      wa_final-transaction-value_details-round_off_amount += wa_price4-ConditionAmount.
 
+      wa_final-transaction-value_details-round_off_amount += wa_price4-ConditionAmount.
 
       wa_final-transaction-value_details-total_assessable_value   +=    wa_itemlist-assessable_value.
       wa_final-transaction-value_details-total_sgst_value += wa_itemlist-sgst_amount .
@@ -600,6 +624,4 @@ CLASS zcl_irn_generation IMPLEMENTATION.
     result = |[{ lv_string }]|.
 
   ENDMETHOD.
-
-
 ENDCLASS.

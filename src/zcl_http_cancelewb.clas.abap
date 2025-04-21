@@ -16,7 +16,55 @@ ENDCLASS.
 
 
 
-CLASS zcl_http_cancelewb IMPLEMENTATION.
+CLASS ZCL_HTTP_CANCELEWB IMPLEMENTATION.
+
+
+  METHOD getPayload.
+
+
+    TYPES: BEGIN OF ty_item_list,
+             ewbNo         TYPE string,
+             cancelRsnCode TYPE string,
+             cancelRmrk    TYPE string,
+           END OF ty_item_list.
+
+    DATA : wa_json TYPE ty_item_list.
+
+    SELECT SINGLE FROM ztable_irn AS a
+    FIELDS a~ewaybillno
+     WHERE a~billingdocno = @invoice AND
+     a~bukrs = @companycode
+     INTO @DATA(lv_table_data).
+
+    IF lv_table_data = ''.
+      result = '1'.
+      RETURN.
+    ENDIF.
+
+    wa_json-ewbno = lv_table_data.
+    wa_json-cancelrmrk = 'DATA_ENTRY_MISTAKE'.
+    wa_json-cancelrsncode = 'DATA_ENTRY_MISTAKE'.
+
+
+    DATA:json TYPE REF TO if_xco_cp_json_data.
+
+    xco_cp_json=>data->from_abap(
+      EXPORTING
+        ia_abap      = wa_json
+      RECEIVING
+        ro_json_data = json   ).
+    json->to_string(
+      RECEIVING
+        rv_string =   DATA(lv_string) ).
+
+    REPLACE ALL OCCURRENCES OF '"EWBNO"' IN lv_string WITH '"ewbNo"'.
+    REPLACE ALL OCCURRENCES OF '"CANCELRSNCODE"' IN lv_string WITH '"cancelRsnCode"'.
+    REPLACE ALL OCCURRENCES OF '"CANCELRMRK"' IN lv_string WITH '"cancelRmrk"'.
+
+    result = lv_string.
+
+  ENDMETHOD.
+
 
   METHOD if_http_service_extension~handle_request.
     CASE request->get_method(  ).
@@ -169,52 +217,5 @@ CLASS zcl_http_cancelewb IMPLEMENTATION.
         response->set_status( i_code = 405 i_reason = 'Method Not Allowed' ).
         response->set_text( 'Only POST method is supported' ).
     ENDCASE.
-  ENDMETHOD.
-
-
-  METHOD getPayload.
-
-
-    TYPES: BEGIN OF ty_item_list,
-             ewbNo         TYPE string,
-             cancelRsnCode TYPE string,
-             cancelRmrk    TYPE string,
-           END OF ty_item_list.
-
-    DATA : wa_json TYPE ty_item_list.
-
-    SELECT SINGLE FROM ztable_irn AS a
-    FIELDS a~ewaybillno
-     WHERE a~billingdocno = @invoice AND
-     a~bukrs = @companycode
-     INTO @DATA(lv_table_data).
-
-    IF lv_table_data = ''.
-      result = '1'.
-      RETURN.
-    ENDIF.
-
-    wa_json-ewbno = lv_table_data.
-    wa_json-cancelrmrk = 'DATA_ENTRY_MISTAKE'.
-    wa_json-cancelrsncode = 'DATA_ENTRY_MISTAKE'.
-
-
-    DATA:json TYPE REF TO if_xco_cp_json_data.
-
-    xco_cp_json=>data->from_abap(
-      EXPORTING
-        ia_abap      = wa_json
-      RECEIVING
-        ro_json_data = json   ).
-    json->to_string(
-      RECEIVING
-        rv_string =   DATA(lv_string) ).
-
-    REPLACE ALL OCCURRENCES OF '"EWBNO"' IN lv_string WITH '"ewbNo"'.
-    REPLACE ALL OCCURRENCES OF '"CANCELRSNCODE"' IN lv_string WITH '"cancelRsnCode"'.
-    REPLACE ALL OCCURRENCES OF '"CANCELRMRK"' IN lv_string WITH '"cancelRmrk"'.
-
-    result = lv_string.
-
   ENDMETHOD.
 ENDCLASS.

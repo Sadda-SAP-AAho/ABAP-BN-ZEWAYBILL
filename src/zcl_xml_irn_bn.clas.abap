@@ -76,7 +76,8 @@ ENDCLASS.
 
 
 
-CLASS zcl_xml_irn_bn IMPLEMENTATION.
+CLASS ZCL_XML_IRN_BN IMPLEMENTATION.
+
 
   METHOD create_client .
     DATA(dest) = cl_http_destination_provider=>create_by_url( url ).
@@ -731,6 +732,8 @@ CONDENSE lv_date_raw NO-GAPS.
 
 IF strlen( lv_date_raw ) = 8.
   lv_formatted = lv_date_raw+4(2) && '/' && lv_date_raw+6(2) && '/' && lv_date_raw+0(4).
+*  lv_formatted = lv_date_raw+6(2) && '/' && lv_date_raw+4(2) && '/' && lv_date_raw+0(4).
+
 ENDIF.
 
 DATA(lv_gatemain2) =
@@ -1050,45 +1053,47 @@ READ TABLE it_conditions_zpr0 INTO DATA(wa_cond)
     WITH KEY billingdocument     = wa_item-billingdocument
              billingdocumentitem = wa_item-billingdocumentitem
              conditiontype       = 'ZPR0'.
-IF wa_item-NETPRICEQUANTITYUNIT = wa_item-ORDERQUANTITYUNIT.
 
-    DATA(lv_item_rate) =
-    |<RATEPERUOM>{ wa_cond-conditionratevalue }</RATEPERUOM>|.
-    CONCATENATE lv_xml lv_item_rate INTO lv_xml.
+IF sy-subrc = 0 AND wa_cond-conditionratevalue IS NOT INITIAL.
 
+  DATA : lv_rateperuom TYPE string.
+  DATA : lv_zpr0  TYPE p DECIMALS 2.
 
+  IF wa_item-netpricequantityunit = wa_item-orderquantityunit.
+    lv_rateperuom = |<RATEPERUOM>{ wa_cond-conditionratevalue }</RATEPERUOM>|.
   ELSE.
-   DATA : lv_ZPR0  TYPE p DECIMALS 2.
-    lv_ZPR0 = wa_item-BILLINGTOBASEQUANTITYNMRTR * wa_cond-conditionratevalue.
-    DATA(lv_item_rate2) =
-    |<RATEPERUOM>{ lv_ZPR0 }</RATEPERUOM>|.
-    CONCATENATE lv_xml lv_item_rate2 INTO lv_xml.
-    clear : lv_ZPR0 .
+    lv_zpr0 = wa_item-BILLINGTOBASEQUANTITYNMRTR * wa_cond-conditionratevalue.
+    lv_rateperuom = |<RATEPERUOM>{ lv_zpr0 }</RATEPERUOM>|.
   ENDIF.
+
+  CONCATENATE lv_xml lv_rateperuom INTO lv_xml.
+
+ENDIF.
 
 **********************************************************************RATE PER UOM ZPR0 END
 
 **********************************************************************RATE PER UOM ZCIP END
 
-READ TABLE it_conditions_zcip INTO DATA(wa_cond_ZCIP)
+READ TABLE it_conditions_zcip INTO DATA(wa_cond_zcip)
     WITH KEY billingdocument     = wa_item-billingdocument
              billingdocumentitem = wa_item-billingdocumentitem
              conditiontype       = 'ZCIP'.
-IF wa_item-NETPRICEQUANTITYUNIT = wa_item-ORDERQUANTITYUNIT.
 
+IF sy-subrc = 0 AND wa_cond_zcip-conditionratevalue IS NOT INITIAL.
 
-    DATA(lv_item_rate_ZCIP) =
-    |<ZCIPRATEPERUOM>{ wa_cond_ZCIP-ConditionRateValue }</ZCIPRATEPERUOM>|.
-    CONCATENATE lv_xml lv_item_rate_ZCIP INTO lv_xml.
+  DATA : lv_zcip TYPE p DECIMALS 2.
+  DATA : lv_zcip_rate_xml TYPE string.
 
+  IF wa_item-netpricequantityunit = wa_item-orderquantityunit.
+    lv_zcip_rate_xml = |<ZCIPRATEPERUOM>{ wa_cond_zcip-conditionratevalue }</ZCIPRATEPERUOM>|.
   ELSE.
-  DATA : lv_ZCIP  TYPE p DECIMALS 2.
     lv_zcip = wa_item-BILLINGTOBASEQUANTITYNMRTR * wa_cond_zcip-conditionratevalue.
-    DATA(lv_item_rate_zcip2) =
-    |<ZCIPRATEPERUOM>{ lv_zcip }</ZCIPRATEPERUOM>|.
-    CONCATENATE lv_xml lv_item_rate_zcip2 INTO lv_xml.
-    clear : lv_zcip.
+    lv_zcip_rate_xml = |<ZCIPRATEPERUOM>{ lv_zcip }</ZCIPRATEPERUOM>|.
   ENDIF.
+
+  CONCATENATE lv_xml lv_zcip_rate_xml INTO lv_xml.
+
+ENDIF.
 
 
 **********************************************************************RATE PER UOM ZCIP END
@@ -1189,7 +1194,7 @@ IF wa_item-NETPRICEQUANTITYUNIT = wa_item-ORDERQUANTITYUNIT.
 
 *    DATA(lv_supplier) =
 *    |<Supplier>| &&
-*    |<RegionName></RegionName>| &&                " pending
+*    |<RegionName></RegionName>| &&                 " pending
 *    |</Supplier>|.
 *    CONCATENATE lv_xml lv_supplier INTO lv_xml.
 
@@ -1304,4 +1309,3 @@ IF wa_item-NETPRICEQUANTITYUNIT = wa_item-ORDERQUANTITYUNIT.
 
   ENDMETHOD.
 ENDCLASS.
-

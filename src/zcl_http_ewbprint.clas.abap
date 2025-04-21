@@ -1,18 +1,79 @@
-CLASS zcl_http_ewabillbyirn DEFINITION
+CLASS zcl_http_ewbprint DEFINITION
   PUBLIC
   FINAL
   CREATE PUBLIC .
 
   PUBLIC SECTION.
+
     INTERFACES if_http_service_extension.
+
+    CLASS-METHODS :getPayload IMPORTING
+                                        invoice       TYPE ztable_irn-billingdocno
+                                        companycode   TYPE ztable_irn-bukrs
+                              RETURNING VALUE(result) TYPE string.
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
 
 
 
-CLASS ZCL_HTTP_EWABILLBYIRN IMPLEMENTATION.
+CLASS zcl_http_ewbprint IMPLEMENTATION.
 
+
+  METHOD getPayload.
+
+    TYPES: BEGIN OF ty_ewb_list,
+             ewb_numbers TYPE TABLE OF STRING WITH EMPTY KEY,
+             Print_type  TYPE string,
+           END OF ty_ewb_list.
+
+
+    DATA : wa_json TYPE ty_ewb_list.
+
+    SELECT FROM ztable_irn AS a
+    FIELDS a~ewaybillno
+     WHERE a~billingdocno = @invoice AND
+     a~bukrs = @companycode
+     INTO TABLE @DATA(lv_table_data).
+
+*  Body
+*     {
+*
+*    "ewb_numbers": [
+*        391010298733
+*    ],
+*    "print_type": "BASIC"
+*}
+
+    LOOP AT lv_table_data INTO DATA(wa_table_data1).
+      IF wa_table_data1-ewaybillno = ''.
+        result = '1'.
+        RETURN.
+      ENDIF.
+      APPEND wa_table_data1-ewaybillno TO wa_json-ewb_numbers.
+    ENDLOOP.
+
+    wa_json-print_type = 'BASIC'.
+
+
+    DATA:json TYPE REF TO if_xco_cp_json_data.
+
+    xco_cp_json=>data->from_abap(
+      EXPORTING
+        ia_abap      = wa_json
+      RECEIVING
+        ro_json_data = json   ).
+    json->to_string(
+      RECEIVING
+        rv_string =   DATA(lv_string) ).
+
+    REPLACE ALL OCCURRENCES OF '"EWBNO"' IN lv_string WITH '"ewbNo"'.
+    REPLACE ALL OCCURRENCES OF '"EWB_NUMBERS"' IN lv_string WITH '"ewb_numbers"'.
+    REPLACE ALL OCCURRENCES OF '"PRINT_TYPE"' IN lv_string WITH '"print_type"'.
+
+    result = lv_string.
+
+  ENDMETHOD.
 
   METHOD if_http_service_extension~handle_request.
     CASE request->get_method(  ).
@@ -22,7 +83,7 @@ CLASS ZCL_HTTP_EWABILLBYIRN IMPLEMENTATION.
 
         SELECT SINGLE FROM zr_integration_tab
         FIELDS Intgpath
-        WHERE Intgmodule = 'EWAY-BY-IRN-URL'
+        WHERE Intgmodule = 'EWB-PRINT-URL'
         INTO @irn_url.
 
         TRY.
@@ -43,17 +104,23 @@ CLASS ZCL_HTTP_EWABILLBYIRN IMPLEMENTATION.
             lv_bukrs = request->get_form_field( `companycode` ).
             lv_invoice = request->get_form_field( `document` ).
 
+            SELECT SINGLE FROM ztable_irn AS a
+          FIELDS a~ewaybillno
+             WHERE a~billingdocno = @lv_invoice AND
+             a~bukrs = @lv_bukrs
+             INTO @DATA(lv_table_data1).
+
+
             IF lv_bukrs IS INITIAL OR lv_invoice IS INITIAL.
               response->set_text( 'Company code and document number are required' ).
               RETURN.
+            ELSEIF lv_table_data1 IS INITIAL.
+              response->set_text( 'EWB Not Generated' ).
+              RETURN.
             ENDIF.
 
-            DATA(get_payload) = zcl_ewaybillbyirn_generation=>generated_ewaybillbyirn( companycode = lv_bukrs document = lv_invoice ).
 
-            if get_payload = '1'.
-             response->set_text( 'IRN Not Generated.' ).
-                 return.
-            ENDIF.
+            DATA(get_payload) = getPayload( invoice = lv_invoice companycode = lv_bukrs ).
 
             SELECT SINGLE FROM I_BillingDocumentItem AS b
                   FIELDS b~Plant, b~BillingDocumentType
@@ -100,84 +167,10 @@ CLASS ZCL_HTTP_EWABILLBYIRN IMPLEMENTATION.
 
 
             TRY.
-                url_response2 = lv_client2->execute( if_web_http_client=>post )->get_text( ).
-
-                TYPES: BEGIN OF errorDetails,
-                         error_code    TYPE string,
-                         error_message TYPE string,
-                         error_source  TYPE string,
-                       END OF errorDetails.
-
-                TYPES: BEGIN OF ty_message,
-                         EwbNo        TYPE string,
-                         EwbDt        TYPE string,
-                         EwbValidTill TYPE string,
-                       END OF ty_message.
-
-                TYPES: BEGIN OF success,
-                         Success TYPE string,
-                       END OF success.
-
-
-                TYPES: BEGIN OF gvtres1,
-                         govt_response TYPE success,
-                       END OF gvtres1.
-
-                DATA checkRes TYPE TABLE OF gvtres1.
-
-                xco_cp_json=>data->from_string( url_response2 )->write_to( REF #( checkRes ) ).
-
-                LOOP AT checkRes INTO DATA(Res).
-
-                  IF Res-govt_response-success = 'N'.
-
-                    TYPES: BEGIN OF errors,
-                             ErrorDetails TYPE TABLE OF errorDetails WITH EMPTY KEY,
-                           END OF errors.
-                    TYPES: BEGIN OF gvtres2,
-                             govt_response TYPE errors,
-                           END OF gvtres2.
-
-                    DATA ErrorRes TYPE TABLE OF gvtres2.
-
-                    xco_cp_json=>data->from_string( url_response2 )->write_to( REF #( ErrorRes ) ).
-
-                    LOOP AT ErrorRes INTO DATA(wa_error).
-                      LOOP AT wa_error-govt_response-errordetails INTO DATA(lv_errors).
-                        response->set_text( lv_errors-error_message ).
-                        RETURN.
-                      ENDLOOP.
-                    ENDLOOP.
-                  ELSE.
-
-                    TYPES: BEGIN OF gvtres3,
-                             govt_response TYPE ty_message,
-                           END OF gvtres3.
-
-                    DATA OkRes TYPE TABLE OF gvtres3.
-
-                    xco_cp_json=>data->from_string( url_response2 )->write_to( REF #( OkRes ) ).
-
-                    LOOP AT OkRes INTO DATA(wa_ok).
-                      DATA: wa_zirn TYPE ztable_irn.
-                      SELECT SINGLE * FROM ztable_irn AS a
-                         WHERE a~billingdocno = @lv_invoice AND
-                         a~bukrs = @lv_bukrs
-                         INTO @DATA(lv_table_data).
-
-                      wa_zirn = lv_table_data.
-                      wa_zirn-ewaybillno = wa_ok-govt_response-ewbno.
-                      wa_zirn-ewaydate =  wa_ok-govt_response-ewbdt .
-                      wa_zirn-ewayvaliddate = zcl_http_eway_gen=>getdate( wa_ok-govt_response-ewbvalidtill ).
-                      wa_zirn-ewaycreatedby = sy-mandt.
-                      wa_zirn-ewaystatus = 'GEN'.
-                      MODIFY ztable_irn FROM @wa_zirn.
-
-                      response->set_text( | Eway Bill Generated Successfully { wa_ok-govt_response-ewbno } for Document - { lv_invoice }  | ).
-                      RETURN.
-                    ENDLOOP.
-                  ENDIF.
-                ENDLOOP.
+                url_response2 = lv_client2->execute( if_web_http_client=>post )->get_binary( ).
+                response->set_content_type( 'application/pdf' ).
+                response->set_text( url_response2 ).
+                RETURN.
               CATCH cx_web_http_client_error INTO DATA(lv_error_response2).
                 response->set_status( i_code = 500 i_reason = 'Internal Server Error' ).
                 response->set_text( |API request failed: { lv_error_response2->get_longtext( ) }| ).

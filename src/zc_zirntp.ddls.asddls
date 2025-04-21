@@ -37,7 +37,7 @@ define root view entity ZC_ZIRNTP
   Transportergstin,
   Transportmode ,
   Grno,
-  Grdate,  
+  Grdate,
   Ewaybillno,
   Ewaydate,
   Ewaystatus,

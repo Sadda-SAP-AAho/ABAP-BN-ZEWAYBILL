@@ -15,7 +15,21 @@ ENDCLASS.
 
 
 
-CLASS zcl_http_eway_gen IMPLEMENTATION.
+CLASS ZCL_HTTP_EWAY_GEN IMPLEMENTATION.
+
+
+  METHOD getDate.
+    DATA: lv_date_str   TYPE string.
+
+    " Convert DD/MM/YYYY to YYYYMMDD
+    " Extract date part (first 10 characters)
+    lv_date_str = datestr(10).
+
+    " Convert to ABAP date format (YYYYMMDD)
+    REPLACE ALL OCCURRENCES OF '-' IN lv_date_str WITH ''.
+    result = lv_date_str.
+
+  ENDMETHOD.
 
 
   METHOD if_http_service_extension~handle_request.
@@ -207,18 +221,5 @@ CLASS zcl_http_eway_gen IMPLEMENTATION.
         response->set_status( i_code = 405 i_reason = 'Method Not Allowed' ).
         response->set_text( 'Only POST method is supported' ).
     ENDCASE.
-  ENDMETHOD.
-
-  METHOD getDate.
-    DATA: lv_date_str   TYPE string.
-
-    " Convert DD/MM/YYYY to YYYYMMDD
-    " Extract date part (first 10 characters)
-    lv_date_str = datestr(10).
-
-    " Convert to ABAP date format (YYYYMMDD)
-    REPLACE ALL OCCURRENCES OF '-' IN lv_date_str WITH ''.
-    result = lv_date_str.
-
   ENDMETHOD.
 ENDCLASS.

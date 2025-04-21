@@ -12,7 +12,7 @@ ENDCLASS.
 
 
 
-CLASS zcl_test_del_irn_data IMPLEMENTATION.
+CLASS ZCL_TEST_DEL_IRN_DATA IMPLEMENTATION.
 
 
   METHOD if_oo_adt_classrun~main.

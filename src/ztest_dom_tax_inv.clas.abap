@@ -13,7 +13,7 @@ ENDCLASS.
 
 
 
-CLASS ztest_dom_tax_inv IMPLEMENTATION.
+CLASS ZTEST_DOM_TAX_INV IMPLEMENTATION.
 
 
   METHOD if_oo_adt_classrun~main.
@@ -775,6 +775,4 @@ ENDIF.
     out->write( lv_xml ).
 
   ENDMETHOD.
-
 ENDCLASS.
-

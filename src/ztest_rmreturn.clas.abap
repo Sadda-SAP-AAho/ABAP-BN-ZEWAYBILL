@@ -13,7 +13,7 @@ ENDCLASS.
 
 
 
-CLASS ztest_rmreturn IMPLEMENTATION.
+CLASS ZTEST_RMRETURN IMPLEMENTATION.
 
 
   METHOD if_oo_adt_classrun~main.
@@ -865,6 +865,4 @@ ENDIF.
     out->write( lv_xml ).
 
   ENDMETHOD.
-
 ENDCLASS.
-

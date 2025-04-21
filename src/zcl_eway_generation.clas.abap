@@ -127,7 +127,8 @@ CLASS ZCL_EWAY_GENERATION IMPLEMENTATION.
 
 
     wa_final-supplytype = 'OUTWARD'.
-     IF lv_document_details-BillingDocumentType = 'JDC' OR lv_document_details-BillingDocumentType = 'JSN' OR lv_document_details-BillingDocumentType = 'JVR' OR lv_document_details-BillingDocumentType = 'JSP'.
+     IF lv_document_details-BillingDocumentType = 'JDC' OR lv_document_details-BillingDocumentType = 'JSN' OR lv_document_details-BillingDocumentType = 'JVR'
+        OR lv_document_details-BillingDocumentType = 'JSP' OR lv_document_details-BillingDocumentType = 'JSTO'.
         wa_final-subsupplytype = '5'.
         wa_final-documenttype = 'CHL'.
     ELSE.
@@ -301,7 +302,7 @@ CLASS ZCL_EWAY_GENERATION IMPLEMENTATION.
 
         SELECT   FROM i_billingdocumentitemprcgelmnt as a
         fields  SUM( a~ConditionRateAmount ) as UnitPrice, sum( a~ConditionAmount ) as TotAmt
-         WHERE   conditiontype IN ( 'ZPR0' )
+         WHERE   conditiontype IN ( 'ZPR0','ZCIP' )
          AND billingdocument = @wa_lines-billingdocument AND billingdocumentitem = @wa_lines-billingdocumentitem
           INTO @DATA(unitprice) .
 
@@ -385,6 +386,9 @@ CLASS ZCL_EWAY_GENERATION IMPLEMENTATION.
 
 
     REPLACE ALL OCCURRENCES OF '"GSTIN"' IN lv_string WITH '"Gstin"'.
+    REPLACE ALL OCCURRENCES OF '"TransId":""' IN lv_string WITH '"TransId":null'.
+    REPLACE ALL OCCURRENCES OF '"TransName":""' IN lv_string WITH '"TransName":null'.
+    REPLACE ALL OCCURRENCES OF '"TransDocNo":""' IN lv_string WITH '"TransDocNo":null'.
     REPLACE ALL OCCURRENCES OF '"LGLNM"' IN lv_string WITH '"LglNm"'.
     REPLACE ALL OCCURRENCES OF '"NM"' IN lv_string WITH '"Nm"'.
     REPLACE ALL OCCURRENCES OF '"TRDNM"' IN lv_string WITH '"TrdNm"'.
