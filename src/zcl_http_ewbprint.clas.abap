@@ -23,7 +23,7 @@ CLASS zcl_http_ewbprint IMPLEMENTATION.
   METHOD getPayload.
 
     TYPES: BEGIN OF ty_ewb_list,
-             ewb_numbers TYPE TABLE OF STRING WITH EMPTY KEY,
+             ewb_numbers TYPE TABLE OF string WITH EMPTY KEY,
              Print_type  TYPE string,
            END OF ty_ewb_list.
 
@@ -53,7 +53,16 @@ CLASS zcl_http_ewbprint IMPLEMENTATION.
       APPEND wa_table_data1-ewaybillno TO wa_json-ewb_numbers.
     ENDLOOP.
 
-    wa_json-print_type = 'BASIC'.
+    SELECT SINGLE FROM zr_integration_tab
+     FIELDS Intgpath
+     WHERE Intgmodule = 'EWB-PRINT-TYPE'
+     INTO @DATA(PrintType).
+
+    IF PrintType IS INITIAL.
+      wa_json-print_type = 'BASIC'.
+    ELSE.
+      wa_json-print_type = PrintType.
+    ENDIF.
 
 
     DATA:json TYPE REF TO if_xco_cp_json_data.
